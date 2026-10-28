@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+{% block title %}Eligibility Explorer - {{ app_name }}{% endblock %}
+{% block topbar_title %}Eligibility Explorer{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Eligibility Explorer</h1>
+        <p class="breadcrumb-custom">Dynamically evaluate students against criteria for any recruitment drive</p>
+    </div>
+</div>
+
+<!-- Job Selector & Filters -->
+<div class="card-custom mb-4">
+    <div class="card-body-custom">
+        <form method="GET" class="row g-3 align-items-end">
+            <div class="col-md-5">
+                <label class="form-label-custom">Select Job Posting / Drive <span class="text-danger">*</span></label>
+                <select name="job_id" class="form-select" onchange="this.form.submit()">
+                    <option value="">-- Choose Job Posting to Evaluate --</option>
+                    {% for j in jobs %}
+                    <option value="{{ j.job_id }}" {% if selected_job_id == j.job_id %}selected{% endif %}>
+                        {{ j.job_title }} — {{ j.company_name }} ({{ j.status }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label-custom">Search Candidate</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                    <input type="text" name="search" class="form-control" placeholder="Search by name or roll number..." value="{{ search }}">
+                </div>
+            </div>
+            <div class="col-md-3 d-flex gap-2">
+                <input type="hidden" name="show_ineligible" value="{{ '1' if show_ineligible else '0' }}">
+                <button type="submit" class="btn btn-primary-custom w-100">
+                    <i class="bi bi-funnel me-1"></i> Evaluate
+                </button>
+                {% if selected_job_id or search %}
+                <a href="{{ url_for('eligibility.explorer') }}" class="btn btn-outline-custom" title="Reset">
+                    <i class="bi bi-x-lg"></i>
+                </a>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if job %}
+<!-- Selected Job Criteria Summary -->
+<div class="card-custom mb-4 border-start border-4 border-primary">
+    <div class="card-body-custom py-3">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h5 class="mb-1 text-primary fw-bold">{{ job.job_title }} &bull; {{ job.company_name }}</h5>
+                <div class="text-muted small">
+                    <span class="me-3"><i class="bi bi-mortarboard me-1"></i>Min CGPA: <strong>{{ "%.2f"|format(job.min_cgpa) }}</strong></span>
+                    <span class="me-3"><i class="bi bi-exclamation-triangle me-1"></i>Max Backlogs: <strong>{{ job.max_backlogs }}</strong></span>
+                    <span class="me-3"><i class="bi bi-calendar-event me-1"></i>Batch: <strong>{{ job.eligible_grad_year or 'All Batches' }}</strong></span>
+                    <span class="me-3"><i class="bi bi-clock me-1"></i>Deadline: <strong>{{ job.application_deadline }}</strong></span>
+                    <span>Status: <span class="badge-status badge-{{ job.status|lower }}">{{ job.status }}</span></span>
+                </div>
+            </div>
+            <div>
+                <a href="{{ url_for('jobs.view', job_id=job.job_id) }}" class="btn btn-sm btn-outline-custom">View Posting</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tabs to Switch between Eligible and Ineligible -->
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <ul class="nav nav-pills">
+        <li class="nav-item">
+            <a class="nav-link {% if not show_ineligible %}active{% endif %}" 
+               href="{{ url_for('eligibility.explorer', job_id=selected_job_id, show_ineligible=0, search=search) }}">
+                <i class="bi bi-check-circle me-1"></i> Eligible Candidates 
+                <span class="badge bg-white text-dark ms-1">{{ eligible|length }}</span>
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if show_ineligible %}active{% endif %}" 
+               href="{{ url_for('eligibility.explorer', job_id=selected_job_id, show_ineligible=1, search=search) }}">
+                <i class="bi bi-x-circle me-1"></i> Ineligible Candidates 
+                <span class="badge bg-white text-dark ms-1">{{ ineligible|length }}</span>
+            </a>
+        </li>
+    </ul>
+
+    <div class="text-muted small">
+        Found <strong>{{ eligible|length }}</strong> qualifying candidates out of {{ eligible|length + ineligible|length }} total evaluated
+    </div>
+</div>
+
+<!-- Candidates Results Table -->
+<div class="card-custom">
+    <div class="card-body-custom p-0">
+        {% set candidates = ineligible if show_ineligible else eligible %}
+        {% if candidates %}
+        <div class="table-responsive">
+            <table class="table-custom">
+                <thead>
+                    <tr>
+                        <th>Candidate</th>
+                        <th>Department</th>
+                        <th>Grad Year</th>
+                        <th>CGPA</th>
+                        <th>Backlogs</th>
+                        <th>Registered Skills</th>
+                        <th>Application Status</th>
+                        {% if show_ineligible %}
+                        <th>Disqualification Reasons</th>
+                        {% else %}
+                        <th class="text-end">Quick Action</th>
+                        {% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for s in candidates %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('students.view', student_id=s.student_id) }}" class="fw-semibold text-decoration-none">
+                                {{ s.full_name }}
+                            </a>
+                            <small class="text-muted d-block">{{ s.enrollment_no }}</small>
+                        </td>
+                        <td>
+                            <span class="badge bg-secondary-subtle text-secondary">{{ s.dept_code or s.dept_name }}</span>
+                        </td>
+                        <td>{{ s.graduation_year }}</td>
+                        <td>
+                            <span class="fw-bold {% if s.cgpa >= 8.0 %}text-success{% elif s.cgpa >= 6.5 %}text-primary{% else %}text-warning{% endif %}">
+                                {{ "%.2f"|format(s.cgpa) }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if s.active_backlogs == 0 %}
+                            <span class="badge bg-success-subtle text-success">0</span>
+                            {% else %}
+                            <span class="badge bg-danger-subtle text-danger">{{ s.active_backlogs }}</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if s.skills %}
+                                {% for sk in s.skills.split(', ')[:3] %}
+                                <span class="skill-tag">{{ sk }}</span>
+                                {% endfor %}
+                                {% if s.skills.split(', ')|length > 3 %}
+                                <small class="text-muted">+{{ s.skills.split(', ')|length - 3 }}</small>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-muted small">None</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if s.application_status %}
+                            <span class="badge-status badge-{{ s.application_status|lower }}">{{ s.application_status }}</span>
+                            {% else %}
+                            <span class="text-muted small"><i class="bi bi-dash"></i> Not Applied</span>
+                            {% endif %}
+                        </td>
+
+                        {% if show_ineligible %}
+                        <td>
+                            <ul class="reason-list">
+                                {% for r in s.reasons %}
+                                <li>{{ r }}</li>
+                                {% endfor %}
+                            </ul>
+                        </td>
+                        {% else %}
+                        <td class="text-end">
+                            {% if not s.application_status %}
+                            <a href="{{ url_for('applications.add') }}?student_id={{ s.student_id }}&job_id={{ job.job_id }}" class="btn btn-sm btn-primary-custom">
+                                <i class="bi bi-send me-1"></i> Apply
+                            </a>
+                            {% else %}
+                            <a href="{{ url_for('students.view', student_id=s.student_id) }}" class="btn btn-sm btn-outline-custom">
+                                Profile
+                            </a>
+                            {% endif %}
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="bi bi-{% if show_ineligible %}check2-all text-success{% else %}search text-muted{% endif %}"></i>
+            <h5>{% if show_ineligible %}No ineligible candidates found{% else %}No eligible candidates found{% endif %}</h5>
+            <p>{% if show_ineligible %}All evaluated candidates meet the requirements!{% else %}No students currently meet every academic and skill requirement for this drive.{% endif %}</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% else %}
+<div class="card-custom">
+    <div class="card-body-custom">
+        <div class="empty-state py-5">
+            <i class="bi bi-sliders text-primary"></i>
+            <h4>Select a Job Posting to Begin Evaluation</h4>
+            <p class="text-muted col-md-6 mx-auto">
+                Choose an active or scheduled placement drive from the dropdown selector above to see immediate live evaluation of qualified students with exact match reasons and skill verifications.
+            </p>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}

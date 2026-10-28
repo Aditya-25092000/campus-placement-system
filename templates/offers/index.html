@@ -1,0 +1,118 @@
+{% extends "base.html" %}
+{% block title %}Placement Offers - {{ app_name }}{% endblock %}
+{% block topbar_title %}Offer Management{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Placement Offers</h1>
+        <p class="breadcrumb-custom">Track compensation packages, offer acceptances, and joining confirmations</p>
+    </div>
+</div>
+
+<!-- Filter Bar -->
+<div class="filter-bar">
+    <form method="GET" class="row g-2 align-items-center">
+        <div class="col-md-9">
+            <select name="status" class="form-select">
+                <option value="">All Offer Statuses</option>
+                <option value="Pending" {% if status_filter == 'Pending' %}selected{% endif %}>Pending Decision</option>
+                <option value="Accepted" {% if status_filter == 'Accepted' %}selected{% endif %}>Accepted</option>
+                <option value="Declined" {% if status_filter == 'Declined' %}selected{% endif %}>Declined</option>
+            </select>
+        </div>
+        <div class="col-md-3 d-flex gap-2">
+            <button type="submit" class="btn btn-primary-custom w-100">Filter</button>
+            {% if status_filter %}
+            <a href="{{ url_for('offers.index') }}" class="btn btn-outline-custom" title="Reset Filters"><i class="bi bi-x-lg"></i></a>
+            {% endif %}
+        </div>
+    </form>
+</div>
+
+<!-- Table Card -->
+<div class="card-custom">
+    <div class="card-header-custom">
+        <h5 class="mb-0">Placement Offers Released <span class="badge bg-light text-dark ms-2">{{ total }}</span></h5>
+    </div>
+    <div class="card-body-custom p-0">
+        {% if offers %}
+        <div class="table-responsive">
+            <table class="table-custom">
+                <thead>
+                    <tr>
+                        <th>Candidate</th>
+                        <th>Recruiting Company</th>
+                        <th>Job Title</th>
+                        <th>Annual Package (CTC)</th>
+                        <th>Offer Date</th>
+                        <th>Joining Date</th>
+                        <th>Status</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for o in offers %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('students.view', student_id=o.student_id) }}" class="fw-semibold text-decoration-none">
+                                {{ o.full_name }}
+                            </a>
+                            <small class="text-muted d-block">{{ o.enrollment_no }}</small>
+                        </td>
+                        <td>
+                            <a href="{{ url_for('companies.view', company_id=o.company_id) }}" class="text-decoration-none">
+                                {{ o.company_name }}
+                            </a>
+                        </td>
+                        <td>{{ o.job_title }}</td>
+                        <td>
+                            <span class="fs-6 fw-bold text-success">{{ "%.2f"|format(o.ctc_lpa) }} LPA</span>
+                        </td>
+                        <td>{{ o.offer_date }}</td>
+                        <td>{{ o.joining_date or 'TBD' }}</td>
+                        <td>
+                            <span class="badge-status badge-{{ o.offer_status|lower }}">{{ o.offer_status }}</span>
+                        </td>
+                        <td class="text-end">
+                            <a href="{{ url_for('applications.view', application_id=o.application_id) }}" class="btn btn-sm btn-outline-custom">
+                                View Application
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if total_pages > 1 %}
+        <div class="p-3 border-top d-flex justify-content-between align-items-center">
+            <small class="text-muted">Showing page {{ page }} of {{ total_pages }}</small>
+            <nav>
+                <ul class="pagination pagination-sm pagination-custom mb-0">
+                    <li class="page-item {% if page <= 1 %}disabled{% endif %}">
+                        <a class="page-link" href="{{ url_for('offers.index', page=page-1, status=status_filter) }}">Previous</a>
+                    </li>
+                    {% for p in range(1, total_pages + 1) %}
+                    <li class="page-item {% if p == page %}active{% endif %}">
+                        <a class="page-link" href="{{ url_for('offers.index', page=p, status=status_filter) }}">{{ p }}</a>
+                    </li>
+                    {% endfor %}
+                    <li class="page-item {% if page >= total_pages %}disabled{% endif %}">
+                        <a class="page-link" href="{{ url_for('offers.index', page=page+1, status=status_filter) }}">Next</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+
+        {% else %}
+        <div class="empty-state">
+            <i class="bi bi-award"></i>
+            <h5>No placement offers registered</h5>
+            <p>Generate offers for selected candidates from their application pages.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

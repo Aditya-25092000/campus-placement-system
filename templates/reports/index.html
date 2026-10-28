@@ -1,0 +1,275 @@
+{% extends "base.html" %}
+{% block title %}Placement Analytics & Reports - {{ app_name }}{% endblock %}
+{% block topbar_title %}Placement Reports{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Placement Reports & Analytics</h1>
+        <p class="breadcrumb-custom">Database-driven aggregates, placement statistics, and CSV data exports</p>
+    </div>
+</div>
+
+<!-- Tabs for Different Reports -->
+<ul class="nav nav-pills mb-4" id="reportTabs" role="tablist">
+    <li class="nav-item">
+        <button class="nav-link active" id="dept-tab" data-bs-toggle="tab" data-bs-target="#dept-report" type="button">
+            <i class="bi bi-diagram-3 me-1"></i> Department Summary
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link" id="placed-tab" data-bs-toggle="tab" data-bs-target="#placed-report" type="button">
+            <i class="bi bi-award me-1"></i> Placed Candidates
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link" id="companies-tab" data-bs-toggle="tab" data-bs-target="#company-report" type="button">
+            <i class="bi bi-building me-1"></i> Company Recruitment
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link" id="unapplied-tab" data-bs-toggle="tab" data-bs-target="#unapplied-report" type="button">
+            <i class="bi bi-person-x me-1"></i> Students Without Applications
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link" id="recent-tab" data-bs-toggle="tab" data-bs-target="#recent-report" type="button">
+            <i class="bi bi-activity me-1"></i> Recent Placement Activity
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content" id="reportTabsContent">
+    <!-- Department-wise Placement Statistics -->
+    <div class="tab-pane fade show active" id="dept-report">
+        <div class="card-custom">
+            <div class="card-header-custom">
+                <h5 class="mb-0">Department-wise Placement Overview</h5>
+                <a href="{{ url_for('reports.export_csv', report_type='department') }}" class="btn btn-sm btn-outline-custom">
+                    <i class="bi bi-file-earmark-spreadsheet me-1"></i> Export CSV
+                </a>
+            </div>
+            <div class="card-body-custom p-0">
+                <div class="table-responsive">
+                    <table class="table-custom">
+                        <thead>
+                            <tr>
+                                <th>Department Name</th>
+                                <th>Total Students</th>
+                                <th>Candidates Applied</th>
+                                <th>Students Placed</th>
+                                <th>Placement %</th>
+                                <th>Average CTC (LPA)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for d in dept_stats %}
+                            <tr>
+                                <td class="fw-semibold">{{ d.dept_name }}</td>
+                                <td>{{ d.total_students }}</td>
+                                <td>{{ d.applied }}</td>
+                                <td>
+                                    <span class="badge bg-success-subtle text-success fs-6">{{ d.placed }}</span>
+                                </td>
+                                <td>
+                                    {% set pct = (d.placed * 100 / d.total_students) if d.total_students > 0 else 0 %}
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="progress flex-grow-1" style="height: 6px;">
+                                            <div class="progress-bar bg-success" style="width: {{ pct }}%"></div>
+                                        </div>
+                                        <small class="fw-bold">{{ "%.1f"|format(pct) }}%</small>
+                                    </div>
+                                </td>
+                                <td class="fw-bold text-primary">
+                                    {{ "%.2f"|format(d.avg_ctc) if d.avg_ctc else '—' }} LPA
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Placed Candidates -->
+    <div class="tab-pane fade" id="placed-report">
+        <div class="card-custom">
+            <div class="card-header-custom">
+                <h5 class="mb-0">Placed Students (Accepted Official Offers)</h5>
+                <a href="{{ url_for('reports.export_csv', report_type='placed') }}" class="btn btn-sm btn-outline-custom">
+                    <i class="bi bi-file-earmark-spreadsheet me-1"></i> Export CSV
+                </a>
+            </div>
+            <div class="card-body-custom p-0">
+                {% if placed %}
+                <div class="table-responsive">
+                    <table class="table-custom">
+                        <thead>
+                            <tr>
+                                <th>Candidate Name</th>
+                                <th>Enrollment No</th>
+                                <th>Department</th>
+                                <th>Recruiting Company</th>
+                                <th>Job Designation</th>
+                                <th>CTC (LPA)</th>
+                                <th>Joining Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for p in placed %}
+                            <tr>
+                                <td class="fw-semibold">{{ p.full_name }}</td>
+                                <td>{{ p.enrollment_no }}</td>
+                                <td><span class="badge bg-secondary-subtle text-secondary">{{ p.dept_name }}</span></td>
+                                <td class="fw-semibold">{{ p.company_name }}</td>
+                                <td>{{ p.job_title }}</td>
+                                <td class="fw-bold text-success">{{ "%.2f"|format(p.ctc_lpa) }} LPA</td>
+                                <td>{{ p.joining_date or 'To be decided' }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <i class="bi bi-inbox"></i>
+                    <h5>No candidates with accepted offers yet</h5>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Company Recruitment Report -->
+    <div class="tab-pane fade" id="company-report">
+        <div class="card-custom">
+            <div class="card-header-custom">
+                <h5 class="mb-0">Company-wise Applications & Selections</h5>
+                <a href="{{ url_for('reports.export_csv', report_type='company') }}" class="btn btn-sm btn-outline-custom">
+                    <i class="bi bi-file-earmark-spreadsheet me-1"></i> Export CSV
+                </a>
+            </div>
+            <div class="card-body-custom p-0">
+                <div class="table-responsive">
+                    <table class="table-custom">
+                        <thead>
+                            <tr>
+                                <th>Company Name</th>
+                                <th>Active Drives</th>
+                                <th>Total Applications</th>
+                                <th>Selected Candidates</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for c in company_stats %}
+                            <tr>
+                                <td class="fw-semibold">{{ c.company_name }}</td>
+                                <td>{{ c.job_count }} Drives</td>
+                                <td><span class="badge bg-primary-subtle text-primary">{{ c.app_count }} Applied</span></td>
+                                <td><span class="badge bg-success-subtle text-success">{{ c.selected }} Selected</span></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Students Without Applications -->
+    <div class="tab-pane fade" id="unapplied-report">
+        <div class="card-custom">
+            <div class="card-header-custom">
+                <h5 class="mb-0">Students With Zero Placement Applications</h5>
+                <a href="{{ url_for('reports.export_csv', report_type='no_applications') }}" class="btn btn-sm btn-outline-custom">
+                    <i class="bi bi-file-earmark-spreadsheet me-1"></i> Export CSV
+                </a>
+            </div>
+            <div class="card-body-custom p-0">
+                {% if no_apps %}
+                <div class="table-responsive">
+                    <table class="table-custom">
+                        <thead>
+                            <tr>
+                                <th>Student Name</th>
+                                <th>Enrollment No</th>
+                                <th>Department</th>
+                                <th>CGPA</th>
+                                <th class="text-end">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for s in no_apps %}
+                            <tr>
+                                <td class="fw-semibold">{{ s.full_name }}</td>
+                                <td>{{ s.enrollment_no }}</td>
+                                <td>{{ s.dept_name }}</td>
+                                <td>{{ "%.2f"|format(s.cgpa) }}</td>
+                                <td class="text-end">
+                                    <a href="{{ url_for('students.view', student_id=s.student_id) }}" class="btn btn-sm btn-outline-custom">
+                                        View Profile
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <i class="bi bi-check2-circle text-success"></i>
+                    <h5>All registered students have applied to at least one placement drive!</h5>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Placement Activity -->
+    <div class="tab-pane fade" id="recent-report">
+        <div class="card-custom">
+            <div class="card-header-custom">
+                <h5 class="mb-0">Recent Candidate Activity Stream</h5>
+            </div>
+            <div class="card-body-custom p-0">
+                {% if recent %}
+                <div class="table-responsive">
+                    <table class="table-custom">
+                        <thead>
+                            <tr>
+                                <th>Candidate</th>
+                                <th>Department</th>
+                                <th>Company & Role</th>
+                                <th>Status Transition</th>
+                                <th>Timestamp</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for r in recent %}
+                            <tr>
+                                <td class="fw-semibold">
+                                    {{ r.full_name }}
+                                    <small class="text-muted d-block">{{ r.enrollment_no }}</small>
+                                </td>
+                                <td>{{ r.dept_name }}</td>
+                                <td>{{ r.company_name }} — {{ r.job_title }}</td>
+                                <td>
+                                    <span class="badge-status badge-{{ r.app_status|lower }}">{{ r.app_status }}</span>
+                                </td>
+                                <td><small class="text-muted">{{ r.updated_at }}</small></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <i class="bi bi-clock-history"></i>
+                    <h5>No recent activity recorded</h5>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

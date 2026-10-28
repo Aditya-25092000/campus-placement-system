@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+{% block title %}Application #{{ application.application_id }} - {{ application.full_name }} - {{ app_name }}{% endblock %}
+{% block topbar_title %}Application Details{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Application #{{ application.application_id }}</h1>
+        <p class="breadcrumb-custom">
+            <a href="{{ url_for('applications.index') }}">Applications</a> / {{ application.full_name }} &bull; {{ application.job_title }}
+        </p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('applications.index') }}" class="btn btn-outline-custom">
+            <i class="bi bi-arrow-left me-1"></i> Back to List
+        </a>
+        <a href="{{ url_for('interviews.add', application_id=application.application_id) }}" class="btn btn-primary-custom">
+            <i class="bi bi-calendar-plus me-1"></i> Schedule Interview
+        </a>
+        {% if not offer %}
+        <a href="{{ url_for('offers.add', application_id=application.application_id) }}" class="btn btn-outline-custom">
+            <i class="bi bi-award me-1"></i> Generate Offer
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <!-- Application Overview -->
+    <div class="col-lg-7">
+        <div class="card-custom h-100">
+            <div class="card-header-custom">
+                <h5 class="mb-0"><i class="bi bi-file-earmark-person me-2 text-primary"></i>Candidate & Job Information</h5>
+                <span class="badge-status badge-{{ application.status|lower }} fs-6">{{ application.status }}</span>
+            </div>
+            <div class="card-body-custom">
+                <div class="detail-grid mb-4">
+                    <div class="detail-item">
+                        <label>Candidate Name</label>
+                        <div class="value">
+                            <a href="{{ url_for('students.view', student_id=application.student_id) }}" class="text-decoration-none fw-bold">
+                                {{ application.full_name }}
+                            </a>
+                        </div>
+                    </div>
+                    <div class="detail-item">
+                        <label>Enrollment No</label>
+                        <div class="value">{{ application.enrollment_no }}</div>
+                    </div>
+                    <div class="detail-item">
+                        <label>Department</label>
+                        <div class="value">{{ application.dept_name }}</div>
+                    </div>
+                    <div class="detail-item">
+                        <label>Academic CGPA</label>
+                        <div class="value fw-bold text-primary">{{ "%.2f"|format(application.cgpa) }}</div>
+                    </div>
+                    <div class="detail-item">
+                        <label>Job Title</label>
+                        <div class="value">
+                            <a href="{{ url_for('jobs.view', job_id=application.job_id) }}" class="text-decoration-none fw-semibold">
+                                {{ application.job_title }}
+                            </a>
+                        </div>
+                    </div>
+                    <div class="detail-item">
+                        <label>Recruiting Company</label>
+                        <div class="value">
+                            <a href="{{ url_for('companies.view', company_id=application.company_id) }}" class="text-decoration-none">
+                                {{ application.company_name }}
+                            </a>
+                        </div>
+                    </div>
+                    <div class="detail-item">
+                        <label>Applied Date</label>
+                        <div class="value">{{ application.applied_date.strftime('%d %b %Y, %I:%M %p') if application.applied_date else 'N/A' }}</div>
+                    </div>
+                </div>
+
+                <!-- Update Status Form -->
+                <div class="border-top pt-3">
+                    <label class="form-label-custom mb-2">Update Stage / Status</label>
+                    <form action="{{ url_for('applications.update_status', application_id=application.application_id) }}" method="POST" class="d-flex gap-2">
+                        <select name="status" class="form-select form-select-sm w-auto">
+                            {% for st in ['Applied', 'Shortlisted', 'Interview', 'Selected', 'Rejected', 'Withdrawn'] %}
+                            <option value="{{ st }}" {% if application.status == st %}selected{% endif %}>{{ st }}</option>
+                            {% endfor %}
+                        </select>
+                        <button type="submit" class="btn btn-sm btn-primary-custom">Update Stage</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Offer Status Card -->
+    <div class="col-lg-5">
+        <div class="card-custom h-100">
+            <div class="card-header-custom">
+                <h5 class="mb-0"><i class="bi bi-award me-2 text-primary"></i>Placement Offer</h5>
+                {% if offer %}
+                <span class="badge-status badge-{{ offer.offer_status|lower }}">{{ offer.offer_status }}</span>
+                {% endif %}
+            </div>
+            <div class="card-body-custom">
+                {% if offer %}
+                <div class="mb-3">
+                    <label class="text-muted small text-uppercase fw-bold">Offered CTC Package</label>
+                    <div class="fs-4 fw-bold text-success">{{ "%.2f"|format(offer.ctc_lpa) }} LPA</div>
+                </div>
+                <div class="mb-3">
+                    <label class="text-muted small text-uppercase fw-bold">Offer Release Date</label>
+                    <div class="fw-semibold">{{ offer.offer_date }}</div>
+                </div>
+                <div class="mb-3">
+                    <label class="text-muted small text-uppercase fw-bold">Joining Date</label>
+                    <div>{{ offer.joining_date or 'To be decided upon onboarding' }}</div>
+                </div>
+
+                <div class="border-top pt-3">
+                    <label class="form-label-custom mb-2">Change Offer Decision</label>
+                    <form action="{{ url_for('offers.update_status', offer_id=offer.offer_id) }}" method="POST" class="d-flex gap-2">
+                        <select name="offer_status" class="form-select form-select-sm w-auto">
+                            <option value="Pending" {% if offer.offer_status == 'Pending' %}selected{% endif %}>Pending</option>
+                            <option value="Accepted" {% if offer.offer_status == 'Accepted' %}selected{% endif %}>Accepted</option>
+                            <option value="Declined" {% if offer.offer_status == 'Declined' %}selected{% endif %}>Declined</option>
+                        </select>
+                        <button type="submit" class="btn btn-sm btn-outline-custom">Save Decision</button>
+                    </form>
+                    <small class="text-muted d-block mt-2">
+                        <i class="bi bi-shield-check"></i> Accepting triggers atomic acceptance: declines other pending offers and sets candidate as Selected.
+                    </small>
+                </div>
+                {% else %}
+                <div class="empty-state py-4">
+                    <i class="bi bi-gift fs-2"></i>
+                    <h6 class="mt-2">No placement offer released yet</h6>
+                    <p class="small text-muted mb-3">Release an official compensation package offer for selected candidates.</p>
+                    <a href="{{ url_for('offers.add', application_id=application.application_id) }}" class="btn btn-sm btn-outline-custom">
+                        <i class="bi bi-award me-1"></i> Release Offer
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Interview Rounds Timeline -->
+<div class="card-custom">
+    <div class="card-header-custom">
+        <h5 class="mb-0">Interview Rounds & Assessment History <span class="badge bg-light text-dark ms-2">{{ interviews|length }}</span></h5>
+        <a href="{{ url_for('interviews.add', application_id=application.application_id) }}" class="btn btn-sm btn-primary-custom">
+            <i class="bi bi-plus-circle me-1"></i> Add Round
+        </a>
+    </div>
+    <div class="card-body-custom p-0">
+        {% if interviews %}
+        <div class="table-responsive">
+            <table class="table-custom">
+                <thead>
+                    <tr>
+                        <th>Round Name</th>
+                        <th>Scheduled Date & Time</th>
+                        <th>Interview Mode</th>
+                        <th>Location / Link Details</th>
+                        <th>Status</th>
+                        <th>Outcome / Result</th>
+                        <th>Feedback / Observations</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for iv in interviews %}
+                    <tr>
+                        <td class="fw-semibold">{{ iv.round_name }}</td>
+                        <td>{{ iv.scheduled_date.strftime('%d %b %Y, %I:%M %p') if iv.scheduled_date else 'N/A' }}</td>
+                        <td><span class="badge bg-light text-dark border">{{ iv.interview_mode }}</span></td>
+                        <td><small>{{ iv.location_details or 'Campus Boardroom' }}</small></td>
+                        <td><span class="badge-status badge-{{ iv.status|lower }}">{{ iv.status }}</span></td>
+                        <td><span class="badge-status badge-{{ iv.result|lower }}">{{ iv.result }}</span></td>
+                        <td><small class="text-muted">{{ iv.feedback or '—' }}</small></td>
+                        <td class="text-end">
+                            <div class="d-inline-flex gap-1">
+                                <a href="{{ url_for('interviews.edit', interview_id=iv.interview_id) }}" class="btn btn-sm btn-outline-custom" title="Edit Round">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <form action="{{ url_for('interviews.delete', interview_id=iv.interview_id) }}" method="POST" class="d-inline delete-form">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Remove Round">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="bi bi-calendar-check"></i>
+            <h5>No interview rounds scheduled</h5>
+            <p>Schedule an Aptitude, Technical, or HR round for this applicant.</p>
+            <a href="{{ url_for('interviews.add', application_id=application.application_id) }}" class="btn btn-primary-custom mt-2">Schedule First Round</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

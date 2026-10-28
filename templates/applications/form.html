@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}Submit Application - {{ app_name }}{% endblock %}
+{% block topbar_title %}Submit Application{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Submit Candidate Application</h1>
+        <p class="breadcrumb-custom">
+            <a href="{{ url_for('applications.index') }}">Applications</a> / New Application
+        </p>
+    </div>
+    <div>
+        <a href="{{ url_for('applications.index') }}" class="btn btn-outline-custom">
+            <i class="bi bi-arrow-left me-1"></i> Back to List
+        </a>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="form-section">
+            <div class="alert alert-info d-flex align-items-center mb-4" role="alert">
+                <i class="bi bi-info-circle-fill me-2 fs-5"></i>
+                <div>
+                    <strong>Eligibility Verification:</strong> The database and eligibility service will automatically verify that the selected student satisfies CGPA, backlogs, department, graduation year, and required skills criteria for this posting before saving.
+                </div>
+            </div>
+
+            <form method="POST">
+                <div class="mb-4">
+                    <label class="form-label-custom">Select Candidate <span class="text-danger">*</span></label>
+                    <select name="student_id" id="student_id" class="form-select" required>
+                        <option value="">-- Choose Student --</option>
+                        {% for s in students %}
+                        <option value="{{ s.student_id }}" {% if application.student_id|string == s.student_id|string or request.args.get('student_id') == s.student_id|string %}selected{% endif %}>
+                            {{ s.full_name }} ({{ s.enrollment_no }}) — {{ s.dept_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label-custom">Select Active Job Posting <span class="text-danger">*</span></label>
+                    <select name="job_id" id="job_id" class="form-select" required>
+                        <option value="">-- Choose Job Posting --</option>
+                        {% for j in jobs %}
+                        <option value="{{ j.job_id }}" {% if application.job_id|string == j.job_id|string or request.args.get('job_id') == j.job_id|string %}selected{% endif %}>
+                            {{ j.job_title }} — {{ j.company_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <small class="text-muted">Only active job postings with non-expired deadlines are listed.</small>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2 pt-3 border-top">
+                    <a href="{{ url_for('applications.index') }}" class="btn btn-outline-custom">Cancel</a>
+                    <button type="submit" class="btn btn-primary-custom px-4">
+                        <i class="bi bi-send-check me-1"></i> Submit Application
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

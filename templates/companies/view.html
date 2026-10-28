@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+{% block title %}{{ company.company_name }} - {{ app_name }}{% endblock %}
+{% block topbar_title %}Company Profile{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">{{ company.company_name }}</h1>
+        <p class="breadcrumb-custom">
+            <a href="{{ url_for('companies.index') }}">Companies</a> / {{ company.company_name }}
+        </p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('companies.edit', company_id=company.company_id) }}" class="btn btn-outline-custom">
+            <i class="bi bi-pencil me-1"></i> Edit Company
+        </a>
+        <a href="{{ url_for('jobs.add') }}?company_id={{ company.company_id }}" class="btn btn-primary-custom">
+            <i class="bi bi-plus-circle me-1"></i> Post New Job
+        </a>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <!-- Company Profile Card -->
+    <div class="col-lg-8">
+        <div class="card-custom h-100">
+            <div class="card-header-custom">
+                <h5 class="mb-0"><i class="bi bi-building me-2 text-primary"></i>Company Overview</h5>
+                <span class="badge bg-light text-dark border">{{ company.industry or 'General Industry' }}</span>
+            </div>
+            <div class="card-body-custom">
+                <div class="detail-grid mb-3">
+                    <div class="detail-item">
+                        <label>Company ID</label>
+                        <div class="value">#{{ company.company_id }}</div>
+                    </div>
+                    <div class="detail-item">
+                        <label>Industry</label>
+                        <div class="value">{{ company.industry or 'Not specified' }}</div>
+                    </div>
+                    <div class="detail-item">
+                        <label>Website</label>
+                        <div class="value">
+                            {% if company.website %}
+                            <a href="{{ company.website }}" target="_blank" class="text-decoration-none">
+                                {{ company.website }} <i class="bi bi-box-arrow-up-right small"></i>
+                            </a>
+                            {% else %}
+                            <span class="text-muted">Not specified</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="border-top pt-3">
+                    <label class="form-label-custom">About Company</label>
+                    <p class="text-secondary mb-0">{{ company.description or 'No description provided.' }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- HR Contact Card -->
+    <div class="col-lg-4">
+        <div class="card-custom h-100">
+            <div class="card-header-custom">
+                <h5 class="mb-0"><i class="bi bi-person-lines-fill me-2 text-primary"></i>HR Point of Contact</h5>
+            </div>
+            <div class="card-body-custom">
+                <div class="mb-3">
+                    <label class="text-muted small text-uppercase fw-bold">Contact Person</label>
+                    <div class="fs-6 fw-semibold">{{ company.hr_contact_name or 'Not assigned' }}</div>
+                </div>
+                <div class="mb-3">
+                    <label class="text-muted small text-uppercase fw-bold">Official Email</label>
+                    <div>
+                        {% if company.hr_email %}
+                        <a href="mailto:{{ company.hr_email }}" class="text-decoration-none">
+                            <i class="bi bi-envelope me-1"></i>{{ company.hr_email }}
+                        </a>
+                        {% else %}
+                        <span class="text-muted">Not available</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div>
+                    <label class="text-muted small text-uppercase fw-bold">Phone Number</label>
+                    <div>
+                        {% if company.contact_number %}
+                        <a href="tel:{{ company.contact_number }}" class="text-decoration-none">
+                            <i class="bi bi-telephone me-1"></i>{{ company.contact_number }}
+                        </a>
+                        {% else %}
+                        <span class="text-muted">Not available</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Job Postings by this Company -->
+<div class="card-custom">
+    <div class="card-header-custom">
+        <h5 class="mb-0">Job Drives / Postings <span class="badge bg-light text-dark ms-2">{{ jobs|length }}</span></h5>
+    </div>
+    <div class="card-body-custom p-0">
+        {% if jobs %}
+        <div class="table-responsive">
+            <table class="table-custom">
+                <thead>
+                    <tr>
+                        <th>Job Title</th>
+                        <th>Type</th>
+                        <th>Location</th>
+                        <th>Min CGPA</th>
+                        <th>Deadline</th>
+                        <th>Status</th>
+                        <th>Applicants</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for j in jobs %}
+                    <tr>
+                        <td class="fw-semibold">
+                            <a href="{{ url_for('jobs.view', job_id=j.job_id) }}" class="text-decoration-none">
+                                {{ j.job_title }}
+                            </a>
+                        </td>
+                        <td><span class="badge bg-light text-dark">{{ j.job_type }}</span></td>
+                        <td>{{ j.job_location or 'Flexible' }}</td>
+                        <td>{{ "%.2f"|format(j.min_cgpa) }}</td>
+                        <td><small>{{ j.application_deadline }}</small></td>
+                        <td><span class="badge-status badge-{{ j.status|lower }}">{{ j.status }}</span></td>
+                        <td>
+                            <span class="badge bg-primary-subtle text-primary">{{ j.app_count }} Applied</span>
+                        </td>
+                        <td class="text-end">
+                            <a href="{{ url_for('jobs.view', job_id=j.job_id) }}" class="btn btn-sm btn-outline-custom">View</a>
+                            <a href="{{ url_for('eligibility.explorer') }}?job_id={{ j.job_id }}" class="btn btn-sm btn-outline-custom" title="Evaluate Candidates">
+                                <i class="bi bi-people"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="bi bi-briefcase"></i>
+            <h5>No job drives posted for this company</h5>
+            <p>Create a job drive to begin accepting student applications.</p>
+            <a href="{{ url_for('jobs.add') }}?company_id={{ company.company_id }}" class="btn btn-primary-custom mt-2">Create Job Posting</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block title %}Generate Placement Offer - {{ application.full_name }} - {{ app_name }}{% endblock %}
+{% block topbar_title %}Generate Placement Offer{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Issue Placement Offer</h1>
+        <p class="breadcrumb-custom">
+            <a href="{{ url_for('applications.view', application_id=application.application_id) }}">Application #{{ application.application_id }}</a> / 
+            {{ application.full_name }} &bull; {{ application.job_title }}
+        </p>
+    </div>
+    <div>
+        <a href="{{ url_for('applications.view', application_id=application.application_id) }}" class="btn btn-outline-custom">
+            <i class="bi bi-arrow-left me-1"></i> Back to Application
+        </a>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="form-section">
+            <div class="alert alert-warning mb-4" role="alert">
+                <i class="bi bi-shield-exclamation me-2"></i>
+                <strong>Single Accepted Offer Policy:</strong> While students can receive multiple provisional offers, university policy and database triggers strictly enforce that a candidate can only hold at most <strong>one accepted offer</strong> at any time.
+            </div>
+
+            <form method="POST">
+                <h5 class="border-bottom pb-2 mb-3">Offer & Compensation Particulars</h5>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label-custom">Candidate</label>
+                        <input type="text" class="form-control" value="{{ application.full_name }} ({{ application.enrollment_no }})" readonly disabled>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label-custom">Company & Job Role</label>
+                        <input type="text" class="form-control" value="{{ application.company_name }} — {{ application.job_title }}" readonly disabled>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label-custom">Annual CTC in INR (LPA) <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <span class="input-group-text">₹</span>
+                            <input type="number" step="0.01" name="ctc_lpa" class="form-control" 
+                                   value="{{ offer.ctc_lpa or '' }}" placeholder="e.g. 8.50" required min="0.5">
+                            <span class="input-group-text">LPA</span>
+                        </div>
+                        <small class="text-muted">Lakhs Per Annum</small>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label-custom">Offer Release Date <span class="text-danger">*</span></label>
+                        <input type="date" name="offer_date" class="form-control" 
+                               value="{{ offer.offer_date or '' }}" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label-custom">Offer Status</label>
+                        <select name="offer_status" class="form-select">
+                            <option value="Pending" {% if offer.offer_status == 'Pending' %}selected{% endif %}>Pending Acceptance</option>
+                            <option value="Accepted" {% if offer.offer_status == 'Accepted' %}selected{% endif %}>Accepted by Candidate</option>
+                            <option value="Declined" {% if offer.offer_status == 'Declined' %}selected{% endif %}>Declined</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label-custom">Expected Joining Date</label>
+                        <input type="date" name="joining_date" class="form-control" 
+                               value="{{ offer.joining_date or '' }}">
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2 pt-3 border-top">
+                    <a href="{{ url_for('applications.view', application_id=application.application_id) }}" class="btn btn-outline-custom">Cancel</a>
+                    <button type="submit" class="btn btn-primary-custom px-4">
+                        <i class="bi bi-award me-1"></i> Record Offer
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

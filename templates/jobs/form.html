@@ -1,0 +1,144 @@
+{% extends "base.html" %}
+{% block title %}{% if is_edit %}Edit Job - {{ job.job_title }}{% else %}Create Job Posting{% endif %} - {{ app_name }}{% endblock %}
+{% block topbar_title %}{% if is_edit %}Edit Job Posting{% else %}Create Job Posting{% endif %}{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">{% if is_edit %}Edit Job Posting{% else %}Create Campus Recruitment Drive{% endif %}</h1>
+        <p class="breadcrumb-custom">
+            <a href="{{ url_for('jobs.index') }}">Job Postings</a> / {% if is_edit %}Edit #{{ job.job_title }}{% else %}New Drive{% endif %}
+        </p>
+    </div>
+    <div>
+        <a href="{{ url_for('jobs.index') }}" class="btn btn-outline-custom">
+            <i class="bi bi-arrow-left me-1"></i> Back to List
+        </a>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="form-section">
+            <form method="POST">
+                <h5 class="border-bottom pb-2 mb-3">Job Details & Role Specifications</h5>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label-custom">Recruiting Company <span class="text-danger">*</span></label>
+                        <select name="company_id" class="form-select" required>
+                            <option value="">Select Company</option>
+                            {% for c in companies %}
+                            <option value="{{ c.company_id }}" 
+                                {% if job.company_id|string == c.company_id|string %}selected{% endif %}>
+                                {{ c.company_name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label-custom">Job Title / Designation <span class="text-danger">*</span></label>
+                        <input type="text" name="job_title" class="form-control" 
+                               value="{{ job.job_title or '' }}" placeholder="e.g. Software Development Engineer" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label-custom">Employment Type</label>
+                        <select name="job_type" class="form-select">
+                            <option value="Full-time" {% if job.job_type == 'Full-time' %}selected{% endif %}>Full-time</option>
+                            <option value="Internship" {% if job.job_type == 'Internship' %}selected{% endif %}>Internship</option>
+                            <option value="Part-time" {% if job.job_type == 'Part-time' %}selected{% endif %}>Part-time</option>
+                            <option value="Contract" {% if job.job_type == 'Contract' %}selected{% endif %}>Contract</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label-custom">Job Location</label>
+                        <input type="text" name="job_location" class="form-control" 
+                               value="{{ job.job_location or '' }}" placeholder="e.g. Bengaluru, Remote, Pune">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label-custom">Posting Status</label>
+                        <select name="status" class="form-select">
+                            <option value="Active" {% if job.status == 'Active' %}selected{% endif %}>Active</option>
+                            <option value="Closed" {% if job.status == 'Closed' %}selected{% endif %}>Closed</option>
+                            <option value="Draft" {% if job.status == 'Draft' %}selected{% endif %}>Draft</option>
+                        </select>
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label-custom">Job Description & Responsibilities</label>
+                        <textarea name="job_description" class="form-control" rows="4" 
+                                  placeholder="Describe the job duties, qualifications, package details, and selection process...">{{ job.job_description or '' }}</textarea>
+                    </div>
+                </div>
+
+                <h5 class="border-bottom pb-2 mb-3">Academic Eligibility Criteria</h5>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <label class="form-label-custom">Minimum CGPA (0.0 - 10.0)</label>
+                        <input type="number" step="0.01" name="min_cgpa" class="form-control" 
+                               value="{{ job.min_cgpa if job.min_cgpa is not none else '0.00' }}" min="0" max="10">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label-custom">Maximum Allowed Backlogs</label>
+                        <input type="number" name="max_backlogs" class="form-control" 
+                               value="{{ job.max_backlogs if job.max_backlogs is not none else 0 }}" min="0">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label-custom">Target Graduation Year</label>
+                        <input type="number" name="eligible_grad_year" class="form-control" 
+                               value="{{ job.eligible_grad_year or '' }}" placeholder="Leave blank for all years">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label-custom">Application Opening Date <span class="text-danger">*</span></label>
+                        <input type="date" name="application_open_date" class="form-control" 
+                               value="{{ job.application_open_date or '' }}" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label-custom">Application Deadline <span class="text-danger">*</span></label>
+                        <input type="date" name="application_deadline" class="form-control" 
+                               value="{{ job.application_deadline or '' }}" required>
+                    </div>
+                </div>
+
+                <h5 class="border-bottom pb-2 mb-3">Eligible Departments (Branch Criteria)</h5>
+                <p class="text-muted small">Only students in the selected departments will be eligible to apply:</p>
+                <div class="row g-2 mb-4">
+                    {% for d in departments %}
+                    <div class="col-md-6">
+                        <div class="form-check p-2 border rounded">
+                            <input class="form-check-input ms-0 me-2" type="checkbox" name="departments" 
+                                   value="{{ d.department_id }}" id="dept_{{ d.department_id }}"
+                                   {% if d.department_id in selected_depts %}checked{% endif %}>
+                            <label class="form-check-label w-75 cursor-pointer" for="dept_{{ d.department_id }}">
+                                <strong>{{ d.dept_name }}</strong> ({{ d.dept_code }})
+                            </label>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <h5 class="border-bottom pb-2 mb-3">Mandatory Required Skills</h5>
+                <p class="text-muted small">Students must possess ALL checked skills to qualify:</p>
+                <div class="row g-2 mb-4">
+                    {% for sk in all_skills %}
+                    <div class="col-md-3 col-sm-4 col-6">
+                        <div class="form-check p-2 border rounded">
+                            <input class="form-check-input ms-0 me-2" type="checkbox" name="skills" 
+                                   value="{{ sk.skill_id }}" id="skill_{{ sk.skill_id }}"
+                                   {% if sk.skill_id in selected_skills %}checked{% endif %}>
+                            <label class="form-check-label w-75 cursor-pointer" for="skill_{{ sk.skill_id }}">
+                                {{ sk.skill_name }}
+                            </label>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <div class="d-flex justify-content-end gap-2 pt-3 border-top">
+                    <a href="{{ url_for('jobs.index') }}" class="btn btn-outline-custom">Cancel</a>
+                    <button type="submit" class="btn btn-primary-custom px-4">
+                        <i class="bi bi-check2-circle me-1"></i> {% if is_edit %}Update Posting{% else %}Publish Job Posting{% endif %}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

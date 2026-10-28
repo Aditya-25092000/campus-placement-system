@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}{% if is_edit %}Edit Company - {{ company.company_name }}{% else %}Register Company{% endif %} - {{ app_name }}{% endblock %}
+{% block topbar_title %}{% if is_edit %}Edit Company{% else %}Register Company{% endif %}{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">{% if is_edit %}Edit Company Profile{% else %}Register Recruiting Company{% endif %}</h1>
+        <p class="breadcrumb-custom">
+            <a href="{{ url_for('companies.index') }}">Companies</a> / {% if is_edit %}Edit #{{ company.company_name }}{% else %}New Registration{% endif %}
+        </p>
+    </div>
+    <div>
+        <a href="{{ url_for('companies.index') }}" class="btn btn-outline-custom">
+            <i class="bi bi-arrow-left me-1"></i> Back to List
+        </a>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-9">
+        <div class="form-section">
+            <form method="POST">
+                <h5 class="border-bottom pb-2 mb-3">Company Details</h5>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label-custom">Company Name <span class="text-danger">*</span></label>
+                        <input type="text" name="company_name" class="form-control" 
+                               value="{{ company.company_name or '' }}" placeholder="e.g. Google, TCS, Infosys" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label-custom">Industry / Domain</label>
+                        <input type="text" name="industry" class="form-control" 
+                               value="{{ company.industry or '' }}" placeholder="e.g. IT Services, FinTech, Automotive">
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label-custom">Official Website URL</label>
+                        <input type="url" name="website" class="form-control" 
+                               value="{{ company.website or '' }}" placeholder="https://example.com">
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label-custom">About Company / Description</label>
+                        <textarea name="description" class="form-control" rows="3" 
+                                  placeholder="Brief overview of business operations, headquarters, and campus recruitment focus...">{{ company.description or '' }}</textarea>
+                    </div>
+                </div>
+
+                <h5 class="border-bottom pb-2 mb-3">Campus Placement / HR Point of Contact</h5>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <label class="form-label-custom">HR Contact Name</label>
+                        <input type="text" name="hr_contact_name" class="form-control" 
+                               value="{{ company.hr_contact_name or '' }}" placeholder="e.g. Priya Sharma">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label-custom">HR Official Email</label>
+                        <input type="email" name="hr_email" class="form-control" 
+                               value="{{ company.hr_email or '' }}" placeholder="hr@company.com">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label-custom">Contact Phone Number</label>
+                        <input type="tel" name="contact_number" class="form-control" 
+                               value="{{ company.contact_number or '' }}" placeholder="e.g. +91 9876543210">
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2 pt-3 border-top">
+                    <a href="{{ url_for('companies.index') }}" class="btn btn-outline-custom">Cancel</a>
+                    <button type="submit" class="btn btn-primary-custom px-4">
+                        <i class="bi bi-check2-circle me-1"></i> {% if is_edit %}Save Changes{% else %}Register Company{% endif %}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

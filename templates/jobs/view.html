@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+{% block title %}{{ job.job_title }} - {{ job.company_name }} - {{ app_name }}{% endblock %}
+{% block topbar_title %}Job Posting Details{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">{{ job.job_title }}</h1>
+        <p class="breadcrumb-custom">
+            <a href="{{ url_for('jobs.index') }}">Job Postings</a> / {{ job.company_name }} / {{ job.job_title }}
+        </p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('eligibility.explorer') }}?job_id={{ job.job_id }}" class="btn btn-outline-custom">
+            <i class="bi bi-people-fill me-1"></i> Check Eligible Candidates
+        </a>
+        <a href="{{ url_for('jobs.edit', job_id=job.job_id) }}" class="btn btn-outline-custom">
+            <i class="bi bi-pencil me-1"></i> Edit Posting
+        </a>
+        <a href="{{ url_for('applications.add') }}?job_id={{ job.job_id }}" class="btn btn-primary-custom">
+            <i class="bi bi-send me-1"></i> Add Candidate
+        </a>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <!-- Main Info -->
+    <div class="col-lg-8">
+        <div class="card-custom h-100">
+            <div class="card-header-custom">
+                <h5 class="mb-0"><i class="bi bi-briefcase me-2 text-primary"></i>Role Description & Specifications</h5>
+                <span class="badge-status badge-{{ job.status|lower }} fs-6">{{ job.status }}</span>
+            </div>
+            <div class="card-body-custom">
+                <div class="detail-grid mb-3">
+                    <div class="detail-item">
+                        <label>Company</label>
+                        <div class="value">
+                            <a href="{{ url_for('companies.view', company_id=job.company_id) }}" class="text-decoration-none fw-bold">
+                                {{ job.company_name }}
+                            </a>
+                        </div>
+                    </div>
+                    <div class="detail-item">
+                        <label>Employment Type</label>
+                        <div class="value">{{ job.job_type }}</div>
+                    </div>
+                    <div class="detail-item">
+                        <label>Location</label>
+                        <div class="value">{{ job.job_location or 'Flexible / Not specified' }}</div>
+                    </div>
+                    <div class="detail-item">
+                        <label>Opening Date</label>
+                        <div class="value">{{ job.application_open_date }}</div>
+                    </div>
+                    <div class="detail-item">
+                        <label>Application Deadline</label>
+                        <div class="value fw-bold text-danger">{{ job.application_deadline }}</div>
+                    </div>
+                </div>
+
+                <div class="border-top pt-3">
+                    <label class="form-label-custom">Job Overview & Requirements</label>
+                    <p class="text-secondary" style="white-space: pre-line;">{{ job.job_description or 'No full description provided.' }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Eligibility Rules Card -->
+    <div class="col-lg-4">
+        <div class="card-custom h-100">
+            <div class="card-header-custom">
+                <h5 class="mb-0"><i class="bi bi-sliders me-2 text-primary"></i>Eligibility Criteria</h5>
+            </div>
+            <div class="card-body-custom">
+                <ul class="list-group list-group-flush mb-3">
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        <span class="text-muted">Minimum CGPA:</span>
+                        <span class="fw-bold fs-6">{{ "%.2f"|format(job.min_cgpa) }} / 10.0</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        <span class="text-muted">Max Backlogs:</span>
+                        <span class="badge bg-light text-dark border">{{ job.max_backlogs }} allowed</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+                        <span class="text-muted">Target Batch:</span>
+                        <span class="fw-semibold">{{ job.eligible_grad_year or 'All Batches' }}</span>
+                    </li>
+                </ul>
+
+                <div class="mb-3">
+                    <label class="form-label-custom d-block">Eligible Departments</label>
+                    {% if departments %}
+                        {% for d in departments %}
+                        <span class="badge bg-primary-subtle text-primary me-1 mb-1">{{ d.dept_name }} ({{ d.dept_code }})</span>
+                        {% endfor %}
+                    {% else %}
+                        <span class="text-muted small">Open to all departments</span>
+                    {% endif %}
+                </div>
+
+                <div>
+                    <label class="form-label-custom d-block">Required Skills</label>
+                    {% if skills %}
+                        {% for sk in skills %}
+                        <span class="skill-tag me-1 mb-1">{{ sk.skill_name }}</span>
+                        {% endfor %}
+                    {% else %}
+                        <span class="text-muted small">No mandatory skills required</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Candidate Applications Received -->
+<div class="card-custom">
+    <div class="card-header-custom">
+        <h5 class="mb-0">Candidate Applications <span class="badge bg-light text-dark ms-2">{{ applications|length }}</span></h5>
+    </div>
+    <div class="card-body-custom p-0">
+        {% if applications %}
+        <div class="table-responsive">
+            <table class="table-custom">
+                <thead>
+                    <tr>
+                        <th>Enrollment No</th>
+                        <th>Student Name</th>
+                        <th>Department</th>
+                        <th>Applied Date</th>
+                        <th>Status</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for a in applications %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('students.view', student_id=a.student_id) }}" class="fw-semibold text-decoration-none">
+                                {{ a.enrollment_no }}
+                            </a>
+                        </td>
+                        <td>{{ a.full_name }}</td>
+                        <td>{{ a.dept_name }}</td>
+                        <td><small>{{ a.applied_date.strftime('%d %b %Y, %I:%M %p') if a.applied_date else 'N/A' }}</small></td>
+                        <td><span class="badge-status badge-{{ a.status|lower }}">{{ a.status }}</span></td>
+                        <td class="text-end">
+                            <a href="{{ url_for('applications.view', application_id=a.application_id) }}" class="btn btn-sm btn-outline-custom">
+                                View Application
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="bi bi-inbox"></i>
+            <h5>No applications received yet for this posting</h5>
+            <p>Students who meet the criteria can apply or be added directly by the placement cell.</p>
+            <a href="{{ url_for('eligibility.explorer') }}?job_id={{ job.job_id }}" class="btn btn-primary-custom mt-2">Find Eligible Candidates</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

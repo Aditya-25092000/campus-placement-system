@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+{% block title %}Applications - {{ app_name }}{% endblock %}
+{% block topbar_title %}Application Management{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Applications</h1>
+        <p class="breadcrumb-custom">Track and update student applications across recruitment drives</p>
+    </div>
+    <div>
+        <a href="{{ url_for('applications.add') }}" class="btn btn-primary-custom">
+            <i class="bi bi-send-plus me-1"></i> Submit Application
+        </a>
+    </div>
+</div>
+
+<!-- Filter Bar -->
+<div class="filter-bar">
+    <form method="GET" class="row g-2 align-items-center">
+        <div class="col-md-3">
+            <div class="input-group">
+                <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                <input type="text" name="search" class="form-control" placeholder="Search candidate, job..." value="{{ search }}">
+            </div>
+        </div>
+        <div class="col-md-3">
+            <select name="company" class="form-select">
+                <option value="">All Companies</option>
+                {% for c in companies %}
+                <option value="{{ c.company_id }}" {% if company_filter == c.company_id|string %}selected{% endif %}>
+                    {{ c.company_name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <select name="department" class="form-select">
+                <option value="">All Departments</option>
+                {% for d in departments %}
+                <option value="{{ d.department_id }}" {% if dept_filter == d.department_id|string %}selected{% endif %}>
+                    {{ d.dept_name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <select name="status" class="form-select">
+                <option value="">All Statuses</option>
+                {% for st in ['Applied', 'Shortlisted', 'Interview', 'Selected', 'Rejected', 'Withdrawn'] %}
+                <option value="{{ st }}" {% if status_filter == st %}selected{% endif %}>{{ st }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2 d-flex gap-2">
+            <button type="submit" class="btn btn-primary-custom w-100">Filter</button>
+            {% if search or company_filter or dept_filter or status_filter %}
+            <a href="{{ url_for('applications.index') }}" class="btn btn-outline-custom" title="Reset Filters"><i class="bi bi-x-lg"></i></a>
+            {% endif %}
+        </div>
+    </form>
+</div>
+
+<!-- Table Card -->
+<div class="card-custom">
+    <div class="card-header-custom">
+        <h5 class="mb-0">Candidate Applications <span class="badge bg-light text-dark ms-2">{{ total }}</span></h5>
+    </div>
+    <div class="card-body-custom p-0">
+        {% if applications %}
+        <div class="table-responsive">
+            <table class="table-custom">
+                <thead>
+                    <tr>
+                        <th>Candidate</th>
+                        <th>Department</th>
+                        <th>Job Posting</th>
+                        <th>Company</th>
+                        <th>Applied On</th>
+                        <th>Status</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for a in applications %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('students.view', student_id=a.student_id) }}" class="fw-semibold text-decoration-none">
+                                {{ a.full_name }}
+                            </a>
+                            <small class="text-muted d-block">{{ a.enrollment_no }}</small>
+                        </td>
+                        <td>
+                            <span class="badge bg-secondary-subtle text-secondary">{{ a.dept_name }}</span>
+                        </td>
+                        <td>
+                            <a href="{{ url_for('jobs.view', job_id=a.job_id) }}" class="text-decoration-none fw-semibold">
+                                {{ a.job_title }}
+                            </a>
+                        </td>
+                        <td>{{ a.company_name }}</td>
+                        <td><small>{{ a.applied_date.strftime('%d %b %Y, %I:%M %p') if a.applied_date else 'N/A' }}</small></td>
+                        <td>
+                            <span class="badge-status badge-{{ a.status|lower }}">{{ a.status }}</span>
+                        </td>
+                        <td class="text-end">
+                            <div class="d-inline-flex gap-1">
+                                <a href="{{ url_for('applications.view', application_id=a.application_id) }}" class="btn btn-sm btn-outline-custom" title="Manage Application">
+                                    <i class="bi bi-eye"></i> Manage
+                                </a>
+                                <form action="{{ url_for('applications.delete', application_id=a.application_id) }}" method="POST" class="d-inline delete-form">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Withdraw / Delete">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if total_pages > 1 %}
+        <div class="p-3 border-top d-flex justify-content-between align-items-center">
+            <small class="text-muted">Showing page {{ page }} of {{ total_pages }}</small>
+            <nav>
+                <ul class="pagination pagination-sm pagination-custom mb-0">
+                    <li class="page-item {% if page <= 1 %}disabled{% endif %}">
+                        <a class="page-link" href="{{ url_for('applications.index', page=page-1, search=search, company=company_filter, department=dept_filter, status=status_filter) }}">Previous</a>
+                    </li>
+                    {% for p in range(1, total_pages + 1) %}
+                    <li class="page-item {% if p == page %}active{% endif %}">
+                        <a class="page-link" href="{{ url_for('applications.index', page=p, search=search, company=company_filter, department=dept_filter, status=status_filter) }}">{{ p }}</a>
+                    </li>
+                    {% endfor %}
+                    <li class="page-item {% if page >= total_pages %}disabled{% endif %}">
+                        <a class="page-link" href="{{ url_for('applications.index', page=page+1, search=search, company=company_filter, department=dept_filter, status=status_filter) }}">Next</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+
+        {% else %}
+        <div class="empty-state">
+            <i class="bi bi-file-earmark-text"></i>
+            <h5>No applications found</h5>
+            <p>Select candidates and connect them to active placement opportunities.</p>
+            <a href="{{ url_for('applications.add') }}" class="btn btn-primary-custom mt-2">Submit Application</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

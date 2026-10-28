@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}{% if is_edit %}Edit Student - {{ student.full_name }}{% else %}Add Student{% endif %} - {{ app_name }}{% endblock %}
+{% block topbar_title %}{% if is_edit %}Edit Student{% else %}Add Student{% endif %}{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">{% if is_edit %}Edit Student Profile{% else %}Register New Student{% endif %}</h1>
+        <p class="breadcrumb-custom">
+            <a href="{{ url_for('students.index') }}">Students</a> / {% if is_edit %}Edit #{{ student.enrollment_no }}{% else %}New Registration{% endif %}
+        </p>
+    </div>
+    <div>
+        <a href="{{ url_for('students.index') }}" class="btn btn-outline-custom">
+            <i class="bi bi-arrow-left me-1"></i> Back to List
+        </a>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+        <div class="form-section">
+            <form method="POST">
+                <h5 class="border-bottom pb-2 mb-3">Academic & Personal Details</h5>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label-custom">Enrollment Number <span class="text-danger">*</span></label>
+                        <input type="text" name="enrollment_no" class="form-control" 
+                               value="{{ student.enrollment_no or '' }}" 
+                               placeholder="e.g. CS2026001" required {% if is_edit %}readonly disabled{% endif %}>
+                        <small class="text-muted">Unique university registration ID</small>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label-custom">Full Name <span class="text-danger">*</span></label>
+                        <input type="text" name="full_name" class="form-control" 
+                               value="{{ student.full_name or '' }}" placeholder="Enter full name" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label-custom">Email Address <span class="text-danger">*</span></label>
+                        <input type="email" name="email" class="form-control" 
+                               value="{{ student.email or '' }}" placeholder="name@campus.edu" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label-custom">Phone Number</label>
+                        <input type="tel" name="phone" class="form-control" 
+                               value="{{ student.phone or '' }}" placeholder="10-digit mobile number">
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label-custom">Department <span class="text-danger">*</span></label>
+                        <select name="department_id" class="form-select" required>
+                            <option value="">Select Department</option>
+                            {% for d in departments %}
+                            <option value="{{ d.department_id }}" 
+                                {% if student.department_id|string == d.department_id|string %}selected{% endif %}>
+                                {{ d.dept_name }} ({{ d.dept_code }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label-custom">Graduation Year <span class="text-danger">*</span></label>
+                        <input type="number" name="graduation_year" class="form-control" 
+                               value="{{ student.graduation_year or 2026 }}" min="2020" max="2035" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label-custom">CGPA (0.00 - 10.00) <span class="text-danger">*</span></label>
+                        <input type="number" step="0.01" name="cgpa" id="cgpa" class="form-control" 
+                               value="{{ student.cgpa or '' }}" min="0" max="10" placeholder="e.g. 8.50" required>
+                        <div class="invalid-feedback">CGPA must be between 0.00 and 10.00.</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label-custom">Active Backlogs <span class="text-danger">*</span></label>
+                        <input type="number" name="active_backlogs" id="active_backlogs" class="form-control" 
+                               value="{{ student.active_backlogs if student.active_backlogs is not none else 0 }}" min="0" required>
+                    </div>
+                </div>
+
+                <h5 class="border-bottom pb-2 mb-3">Skills Inventory</h5>
+                <p class="text-muted small">Select the verified technical and domain skills possessed by this candidate:</p>
+                <div class="row g-2 mb-4">
+                    {% for sk in all_skills %}
+                    <div class="col-md-3 col-sm-4 col-6">
+                        <div class="form-check p-2 border rounded">
+                            <input class="form-check-input ms-0 me-2" type="checkbox" name="skills" 
+                                   value="{{ sk.skill_id }}" id="skill_{{ sk.skill_id }}"
+                                   {% if sk.skill_id in selected_skills %}checked{% endif %}>
+                            <label class="form-check-label w-75 cursor-pointer" for="skill_{{ sk.skill_id }}">
+                                {{ sk.skill_name }}
+                            </label>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <div class="d-flex justify-content-end gap-2 pt-3 border-top">
+                    <a href="{{ url_for('students.index') }}" class="btn btn-outline-custom">Cancel</a>
+                    <button type="submit" class="btn btn-primary-custom px-4">
+                        <i class="bi bi-check2-circle me-1"></i> {% if is_edit %}Save Changes{% else %}Create Student{% endif %}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

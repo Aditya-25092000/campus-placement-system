@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+{% block title %}SQL & DBMS Showcase - College Viva Demonstration - {{ app_name }}{% endblock %}
+{% block topbar_title %}SQL Showcase for Viva{% endblock %}
+{% block head %}
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({startOnLoad:true, theme:'neutral'});</script>
+{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">SQL & DBMS Concepts Showcase</h1>
+        <p class="breadcrumb-custom">Interactive demonstration of relational database design, joins, subqueries, views, triggers, and ACID transactions for viva examiners</p>
+    </div>
+</div>
+
+<!-- Database Architecture & Normalization Overview -->
+<div class="card-custom mb-4">
+    <div class="card-header-custom">
+        <h5 class="mb-0"><i class="bi bi-diagram-3-fill me-2 text-primary"></i>Relational Architecture & Entity-Relationship Model</h5>
+        <span class="badge bg-success-subtle text-success">Third Normal Form (3NF)</span>
+    </div>
+    <div class="card-body-custom">
+        <p class="text-secondary">
+            The database consists of <strong>12 normalized tables</strong> connected by strictly enforced foreign keys with appropriate <code>ON DELETE RESTRICT</code> and <code>CASCADE</code> rules. Comma-separated attributes have been eliminated via junction tables (<code>student_skills</code>, <code>job_allowed_departments</code>, <code>job_required_skills</code>) satisfying 1NF, 2NF, and 3NF.
+        </p>
+
+        <div class="er-section p-3 border rounded bg-white">
+            <h6 class="fw-bold mb-3"><i class="bi bi-bezier2 me-1"></i>ER Diagram (Mermaid Schema)</h6>
+            <div class="mermaid">
+erDiagram
+    departments ||--o{ students : "enrolls"
+    departments ||--o{ job_allowed_departments : "permits"
+    students ||--o{ student_skills : "possesses"
+    skills ||--o{ student_skills : "categorizes"
+    companies ||--o{ job_postings : "publishes"
+    job_postings ||--o{ job_allowed_departments : "targets"
+    job_postings ||--o{ job_required_skills : "requires"
+    skills ||--o{ job_required_skills : "specifies"
+    students ||--o{ applications : "submits"
+    job_postings ||--o{ applications : "receives"
+    applications ||--o{ interview_rounds : "evaluates"
+    applications ||--o| offers : "results_in"
+    students ||--o{ offers : "awarded_to"
+    companies ||--o{ offers : "extended_by"
+    job_postings ||--o{ offers : "bound_to"
+
+    departments {
+        int department_id PK
+        string dept_name UK
+        string dept_code UK
+    }
+    students {
+        int student_id PK
+        string enrollment_no UK
+        string email UK
+        decimal cgpa
+        int active_backlogs
+        int department_id FK
+    }
+    skills {
+        int skill_id PK
+        string skill_name UK
+    }
+    companies {
+        int company_id PK
+        string company_name UK
+    }
+    job_postings {
+        int job_id PK
+        int company_id FK
+        decimal min_cgpa
+        int max_backlogs
+        string status
+    }
+    applications {
+        int application_id PK
+        int student_id FK
+        int job_id FK
+        string status
+    }
+    interview_rounds {
+        int interview_id PK
+        int application_id FK
+        string round_name
+        string result
+    }
+    offers {
+        int offer_id PK
+        int application_id FK
+        int student_id FK
+        decimal ctc_lpa
+        string offer_status
+    }
+            </div>
+        </div>
+
+        <div class="row g-3 mt-2">
+            <div class="col-md-4">
+                <div class="p-3 border rounded bg-light">
+                    <h6 class="fw-bold mb-1 text-primary">First Normal Form (1NF)</h6>
+                    <small class="text-muted">All columns store atomic values. Multi-valued student skills and job requirements are moved into relational junction tables.</small>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="p-3 border rounded bg-light">
+                    <h6 class="fw-bold mb-1 text-primary">Second Normal Form (2NF)</h6>
+                    <small class="text-muted">In 1NF and no non-key attribute is partially dependent on any composite candidate key (e.g. <code>student_skills</code> has primary key <code>(student_id, skill_id)</code>).</small>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="p-3 border rounded bg-light">
+                    <h6 class="fw-bold mb-1 text-primary">Third Normal Form (3NF)</h6>
+                    <small class="text-muted">In 2NF and no transitive functional dependencies exist. Department names are stored exclusively in <code>departments</code>, not duplicated in students.</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- SQL Demonstrations -->
+<h4 class="mb-3 fw-bold"><i class="bi bi-terminal me-2"></i>Live Executed SQL Demos</h4>
+
+{% for demo in demos %}
+<div class="card-custom mb-4" id="demo-{{ loop.index }}">
+    <div class="card-header-custom bg-white">
+        <h5 class="mb-0 text-primary fw-bold">{{ demo.title }}</h5>
+    </div>
+    <div class="card-body-custom">
+        <!-- Explanation -->
+        <p class="text-secondary mb-2"><strong>DBMS Concept:</strong> {{ demo.explanation }}</p>
+
+        <!-- Formatted SQL Code -->
+        <div class="sql-code">{{ demo.sql }}</div>
+
+        <!-- Query Execution Results -->
+        <div class="mt-3">
+            <h6 class="fw-bold mb-2"><i class="bi bi-table me-1"></i>Execution Output from Live MySQL Database:</h6>
+            
+            {% if demo.is_trigger %}
+            <!-- Trigger Result Demonstration -->
+            <div class="alert alert-danger d-flex align-items-start mt-2">
+                <i class="bi bi-shield-x fs-4 me-3 text-danger"></i>
+                <div>
+                    <h6 class="alert-heading fw-bold">Database Trigger Rejection Intercepted!</h6>
+                    <p class="mb-1 font-monospace small">MySQL Server Error: {{ demo.trigger_error }}</p>
+                    <small class="text-muted">The database engine aborted the transaction before writing corrupted duplicate records.</small>
+                </div>
+            </div>
+
+            {% elif demo.is_transaction %}
+            <!-- Transaction ACID Demonstration -->
+            <div class="alert alert-success d-flex align-items-start mt-2">
+                <i class="bi bi-check-circle-fill fs-4 me-3 text-success"></i>
+                <div>
+                    <h6 class="alert-heading fw-bold">ACID Transaction Safety Verified!</h6>
+                    <p class="mb-1">
+                        When accepting an offer, the stored procedure executes inside a <code>START TRANSACTION</code> block. 
+                        It updates the chosen offer to <strong>'Accepted'</strong>, marks the application as <strong>'Selected'</strong>, and cascades <strong>'Declined'</strong> to all other pending offers for the same student.
+                    </p>
+                    <small class="text-muted">If any single statement throws an error, the <code>DECLARE EXIT HANDLER FOR SQLEXCEPTION</code> executes <code>ROLLBACK</code> immediately.</small>
+                </div>
+            </div>
+
+            {% elif demo.results %}
+            <!-- Tabular Results -->
+            <div class="table-responsive">
+                <table class="table-custom border">
+                    <thead>
+                        <tr>
+                            {% for key in demo.results[0].keys() %}
+                            <th>{{ key|replace('_', ' ')|capitalize }}</th>
+                            {% endfor %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for row in demo.results %}
+                        <tr>
+                            {% for key, val in row.items() %}
+                            <td>
+                                {% if val is none %}
+                                    <span class="text-muted small">NULL</span>
+                                {% elif val.__class__.__name__ == 'datetime' %}
+                                    {{ val.strftime('%Y-%m-%d %H:%M') }}
+                                {% elif val.__class__.__name__ == 'Decimal' %}
+                                    {{ "%.2f"|format(val) }}
+                                {% else %}
+                                    {{ val }}
+                                {% endif %}
+                            </td>
+                            {% endfor %}
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <small class="text-muted d-block mt-2">Showing {{ demo.results|length }} row(s) returned by server.</small>
+
+            {% else %}
+            <div class="empty-state py-3">
+                <i class="bi bi-inbox fs-3 text-muted"></i>
+                <p class="mb-0 text-muted">Query executed successfully. Zero rows returned for current condition.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endfor %}
+{% endblock %}

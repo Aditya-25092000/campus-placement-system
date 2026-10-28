@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - {{ app_name }}{% endblock %}
+{% block topbar_title %}Dashboard{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div><h1 class="page-title">Dashboard</h1>
+    <p class="breadcrumb-custom">Campus Placement Overview</p></div>
+</div>
+
+<!-- KPI Cards -->
+<div class="row g-3 mb-4">
+    {% set kpis = [
+        ('Total Students', stats.total_students, 'bi-people-fill', '#e3f2fd', '#1565C0'),
+        ('Companies', stats.total_companies, 'bi-building', '#f3e5f5', '#7b1fa2'),
+        ('Active Jobs', stats.active_jobs, 'bi-briefcase-fill', '#e8f5e9', '#2e7d32'),
+        ('Applications', stats.total_applications, 'bi-file-earmark-text-fill', '#fff3e0', '#e65100'),
+        ('Students Placed', stats.students_placed, 'bi-award-fill', '#e8f5e9', '#2e7d32'),
+        ('Eligible Students', stats.eligible_students, 'bi-check2-circle', '#e3f2fd', '#1565C0')
+    ] %}
+    {% for label, value, icon, bg, color in kpis %}
+    <div class="col-6 col-md-4 col-xl-2">
+        <div class="kpi-card">
+            <div class="kpi-icon" style="background:{{ bg }};color:{{ color }}"><i class="bi {{ icon }}"></i></div>
+            <div class="kpi-value">{{ value }}</div>
+            <div class="kpi-label">{{ label }}</div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Charts Row -->
+<div class="row g-3 mb-4">
+    <div class="col-lg-6">
+        <div class="card-custom">
+            <div class="card-header-custom"><h5>Applications by Status</h5></div>
+            <div class="card-body-custom"><div class="chart-container"><canvas id="statusChart"></canvas></div></div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card-custom">
+            <div class="card-header-custom"><h5>Department-wise Placements</h5></div>
+            <div class="card-body-custom"><div class="chart-container"><canvas id="deptChart"></canvas></div></div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Applications & Upcoming Interviews -->
+<div class="row g-3 mb-4">
+    <div class="col-lg-7">
+        <div class="card-custom">
+            <div class="card-header-custom"><h5>Recent Applications</h5>
+                <a href="{{ url_for('applications.index') }}" class="btn btn-sm btn-outline-custom">View All</a></div>
+            <div class="card-body-custom p-0">
+                {% if recent_apps %}
+                <div class="table-responsive">
+                <table class="table-custom">
+                    <thead><tr><th>Student</th><th>Job</th><th>Company</th><th>Status</th><th>Date</th></tr></thead>
+                    <tbody>
+                    {% for a in recent_apps %}
+                    <tr>
+                        <td>{{ a.full_name }}<br><small class="text-muted">{{ a.enrollment_no }}</small></td>
+                        <td>{{ a.job_title }}</td>
+                        <td>{{ a.company_name }}</td>
+                        <td><span class="badge-status badge-{{ a.status|lower }}">{{ a.status }}</span></td>
+                        <td><small>{{ a.applied_date.strftime('%d %b %Y') if a.applied_date else '' }}</small></td>
+                    </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+                </div>
+                {% else %}
+                <div class="empty-state"><i class="bi bi-inbox"></i><h5>No applications yet</h5></div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-5">
+        <div class="card-custom">
+            <div class="card-header-custom"><h5>Upcoming Interviews</h5></div>
+            <div class="card-body-custom">
+                {% if upcoming_interviews %}
+                {% for iv in upcoming_interviews %}
+                <div class="d-flex justify-content-between align-items-start mb-3 pb-3 border-bottom">
+                    <div>
+                        <strong>{{ iv.full_name }}</strong> — {{ iv.round_name }}<br>
+                        <small class="text-muted">{{ iv.company_name }} · {{ iv.job_title }}</small>
+                    </div>
+                    <div class="text-end">
+                        <span class="badge-status badge-scheduled">{{ iv.interview_mode }}</span><br>
+                        <small>{{ iv.scheduled_date.strftime('%d %b, %I:%M %p') if iv.scheduled_date else '' }}</small>
+                    </div>
+                </div>
+                {% endfor %}
+                {% else %}
+                <div class="empty-state"><i class="bi bi-calendar-x"></i><h5>No upcoming interviews</h5></div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="card-custom">
+            <div class="card-header-custom"><h5>Quick Actions</h5></div>
+            <div class="card-body-custom d-grid gap-2">
+                <a href="{{ url_for('students.add') }}" class="quick-action"><i class="bi bi-person-plus"></i> Add New Student</a>
+                <a href="{{ url_for('companies.add') }}" class="quick-action"><i class="bi bi-building-add"></i> Register Company</a>
+                <a href="{{ url_for('jobs.add') }}" class="quick-action"><i class="bi bi-plus-circle"></i> Create Job Posting</a>
+                <a href="{{ url_for('applications.add') }}" class="quick-action"><i class="bi bi-send"></i> Submit Application</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Application Status Chart
+    initChart('statusChart', 'doughnut',
+        {{ app_status_chart|map(attribute='status')|list|tojson }},
+        [{
+            data: {{ app_status_chart|map(attribute='count')|list|tojson }},
+            backgroundColor: ['#2196F3','#ff9800','#9c27b0','#4caf50','#f44336','#607d8b'],
+            borderWidth: 0
+        }]
+    );
+    // Department Placement Chart
+    initChart('deptChart', 'bar',
+        {{ dept_chart|map(attribute='dept_name')|list|tojson }},
+        [{
+            label: 'Total Students',
+            data: {{ dept_chart|map(attribute='total')|list|tojson }},
+            backgroundColor: '#e3f2fd', borderColor: '#2196F3', borderWidth: 1
+        },{
+            label: 'Placed',
+            data: {{ dept_chart|map(attribute='placed')|list|tojson }},
+            backgroundColor: '#c8e6c9', borderColor: '#4caf50', borderWidth: 1
+        }],
+        { scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } } }
+    );
+</script>
+{% endblock %}

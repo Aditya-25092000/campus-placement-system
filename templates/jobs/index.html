@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+{% block title %}Job Postings - {{ app_name }}{% endblock %}
+{% block topbar_title %}Placement Drives & Jobs{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Job Postings</h1>
+        <p class="breadcrumb-custom">Manage active campus recruitment opportunities and criteria</p>
+    </div>
+    <div>
+        <a href="{{ url_for('jobs.add') }}" class="btn btn-primary-custom">
+            <i class="bi bi-plus-circle me-1"></i> Create Job Posting
+        </a>
+    </div>
+</div>
+
+<!-- Filter Bar -->
+<div class="filter-bar">
+    <form method="GET" class="row g-2 align-items-center">
+        <div class="col-md-4">
+            <div class="input-group">
+                <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                <input type="text" name="search" class="form-control" placeholder="Search by role or company..." value="{{ search }}">
+            </div>
+        </div>
+        <div class="col-md-3">
+            <select name="company" class="form-select">
+                <option value="">All Companies</option>
+                {% for c in companies %}
+                <option value="{{ c.company_id }}" {% if company_filter == c.company_id|string %}selected{% endif %}>
+                    {{ c.company_name }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <select name="status" class="form-select">
+                <option value="">All Statuses</option>
+                <option value="Active" {% if status_filter == 'Active' %}selected{% endif %}>Active</option>
+                <option value="Closed" {% if status_filter == 'Closed' %}selected{% endif %}>Closed</option>
+                <option value="Draft" {% if status_filter == 'Draft' %}selected{% endif %}>Draft</option>
+            </select>
+        </div>
+        <div class="col-md-2 d-flex gap-2">
+            <button type="submit" class="btn btn-primary-custom w-100">Filter</button>
+            {% if search or status_filter or company_filter %}
+            <a href="{{ url_for('jobs.index') }}" class="btn btn-outline-custom" title="Reset Filters"><i class="bi bi-x-lg"></i></a>
+            {% endif %}
+        </div>
+    </form>
+</div>
+
+<!-- Table Card -->
+<div class="card-custom">
+    <div class="card-header-custom">
+        <h5 class="mb-0">Job Drives <span class="badge bg-light text-dark ms-2">{{ total }}</span></h5>
+    </div>
+    <div class="card-body-custom p-0">
+        {% if jobs %}
+        <div class="table-responsive">
+            <table class="table-custom">
+                <thead>
+                    <tr>
+                        <th>Job Title</th>
+                        <th>Company</th>
+                        <th>Type & Location</th>
+                        <th>Criteria (Min CGPA / Backlogs)</th>
+                        <th>Eligible Depts</th>
+                        <th>Deadline</th>
+                        <th>Status</th>
+                        <th>Applicants</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for j in jobs %}
+                    <tr>
+                        <td>
+                            <a href="{{ url_for('jobs.view', job_id=j.job_id) }}" class="fw-semibold text-decoration-none">
+                                {{ j.job_title }}
+                            </a>
+                        </td>
+                        <td>{{ j.company_name }}</td>
+                        <td>
+                            <span class="badge bg-light text-dark border">{{ j.job_type }}</span>
+                            <small class="text-muted d-block">{{ j.job_location or 'Flexible' }}</small>
+                        </td>
+                        <td>
+                            <div>Min CGPA: <strong>{{ "%.2f"|format(j.min_cgpa) }}</strong></div>
+                            <small class="text-muted">Max Backlogs: {{ j.max_backlogs }}</small>
+                        </td>
+                        <td>
+                            <span class="badge bg-info-subtle text-info">{{ j.dept_count }} Dept(s)</span>
+                        </td>
+                        <td>
+                            <small class="{% if j.status == 'Active' and j.application_deadline < j.application_deadline.__class__.today() %}text-danger fw-bold{% endif %}">
+                                {{ j.application_deadline }}
+                            </small>
+                        </td>
+                        <td>
+                            <span class="badge-status badge-{{ j.status|lower }}">{{ j.status }}</span>
+                        </td>
+                        <td>
+                            <span class="badge bg-primary-subtle text-primary">{{ j.app_count }} Applied</span>
+                        </td>
+                        <td class="text-end">
+                            <div class="d-inline-flex gap-1">
+                                <a href="{{ url_for('eligibility.explorer') }}?job_id={{ j.job_id }}" class="btn btn-sm btn-outline-custom" title="View Eligible Candidates">
+                                    <i class="bi bi-person-check"></i>
+                                </a>
+                                <a href="{{ url_for('jobs.view', job_id=j.job_id) }}" class="btn btn-sm btn-outline-custom" title="View Posting">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <a href="{{ url_for('jobs.edit', job_id=j.job_id) }}" class="btn btn-sm btn-outline-custom" title="Edit Posting">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                <form action="{{ url_for('jobs.delete', job_id=j.job_id) }}" method="POST" class="d-inline delete-form">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete Posting">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if total_pages > 1 %}
+        <div class="p-3 border-top d-flex justify-content-between align-items-center">
+            <small class="text-muted">Showing page {{ page }} of {{ total_pages }}</small>
+            <nav>
+                <ul class="pagination pagination-sm pagination-custom mb-0">
+                    <li class="page-item {% if page <= 1 %}disabled{% endif %}">
+                        <a class="page-link" href="{{ url_for('jobs.index', page=page-1, search=search, company=company_filter, status=status_filter) }}">Previous</a>
+                    </li>
+                    {% for p in range(1, total_pages + 1) %}
+                    <li class="page-item {% if p == page %}active{% endif %}">
+                        <a class="page-link" href="{{ url_for('jobs.index', page=p, search=search, company=company_filter, status=status_filter) }}">{{ p }}</a>
+                    </li>
+                    {% endfor %}
+                    <li class="page-item {% if page >= total_pages %}disabled{% endif %}">
+                        <a class="page-link" href="{{ url_for('jobs.index', page=page+1, search=search, company=company_filter, status=status_filter) }}">Next</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+
+        {% else %}
+        <div class="empty-state">
+            <i class="bi bi-briefcase"></i>
+            <h5>No job postings found</h5>
+            <p>Publish a job posting specifying eligibility criteria to begin hiring drives.</p>
+            <a href="{{ url_for('jobs.add') }}" class="btn btn-primary-custom mt-2">Create Job Posting</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

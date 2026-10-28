@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}{% if is_edit %}Edit Interview Round{% else %}Schedule Interview Round{% endif %} - {{ app_name }}{% endblock %}
+{% block topbar_title %}{% if is_edit %}Edit Interview Round{% else %}Schedule Interview{% endif %}{% endblock %}
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">{% if is_edit %}Edit Interview Evaluation{% else %}Schedule Interview Round{% endif %}</h1>
+        <p class="breadcrumb-custom">
+            <a href="{{ url_for('applications.view', application_id=application.application_id) }}">Application #{{ application.application_id }}</a> / 
+            {{ application.full_name }} &bull; {{ application.job_title }}
+        </p>
+    </div>
+    <div>
+        <a href="{{ url_for('applications.view', application_id=application.application_id) }}" class="btn btn-outline-custom">
+            <i class="bi bi-arrow-left me-1"></i> Back to Application
+        </a>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="form-section">
+            <form method="POST">
+                <h5 class="border-bottom pb-2 mb-3">Interview Round Details</h5>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label-custom">Round Name <span class="text-danger">*</span></label>
+                        {% if is_edit %}
+                        <input type="text" name="round_name" class="form-control" value="{{ interview.round_name }}" readonly disabled>
+                        {% else %}
+                        <select name="round_name" class="form-select" required>
+                            <option value="">Select Round Name</option>
+                            <option value="Aptitude" {% if interview.round_name == 'Aptitude' %}selected{% endif %}>Aptitude & Reasoning</option>
+                            <option value="Technical" {% if interview.round_name == 'Technical' %}selected{% endif %}>Technical Assessment</option>
+                            <option value="Managerial" {% if interview.round_name == 'Managerial' %}selected{% endif %}>Managerial Round</option>
+                            <option value="HR" {% if interview.round_name == 'HR' %}selected{% endif %}>HR & Cultural Fit</option>
+                        </select>
+                        {% endif %}
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label-custom">Scheduled Date & Time <span class="text-danger">*</span></label>
+                        <input type="datetime-local" name="scheduled_date" class="form-control" 
+                               value="{{ interview.scheduled_date.strftime('%Y-%m-%dT%H:%M') if interview.scheduled_date and interview.scheduled_date.__class__.__name__ != 'str' else (interview.scheduled_date or '') }}" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label-custom">Interview Mode</label>
+                        <select name="interview_mode" class="form-select">
+                            <option value="In-Person" {% if interview.interview_mode == 'In-Person' %}selected{% endif %}>In-Person (Campus)</option>
+                            <option value="Online" {% if interview.interview_mode == 'Online' %}selected{% endif %}>Online (Video Call)</option>
+                            <option value="Hybrid" {% if interview.interview_mode == 'Hybrid' %}selected{% endif %}>Hybrid</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label-custom">Location / Meeting Link</label>
+                        <input type="text" name="location_details" class="form-control" 
+                               value="{{ interview.location_details or '' }}" placeholder="Room 302, Block A / Google Meet URL">
+                    </div>
+                </div>
+
+                {% if is_edit %}
+                <h5 class="border-bottom pb-2 mb-3">Evaluation & Status Updates</h5>
+                <div class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <label class="form-label-custom">Round Status</label>
+                        <select name="status" class="form-select">
+                            <option value="Scheduled" {% if interview.status == 'Scheduled' %}selected{% endif %}>Scheduled</option>
+                            <option value="Completed" {% if interview.status == 'Completed' %}selected{% endif %}>Completed</option>
+                            <option value="Cancelled" {% if interview.status == 'Cancelled' %}selected{% endif %}>Cancelled</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label-custom">Result Outcome</label>
+                        <select name="result" class="form-select">
+                            <option value="Pending" {% if interview.result == 'Pending' %}selected{% endif %}>Pending Decision</option>
+                            <option value="Passed" {% if interview.result == 'Passed' %}selected{% endif %}>Passed / Recommended</option>
+                            <option value="Failed" {% if interview.result == 'Failed' %}selected{% endif %}>Failed / Not Selected</option>
+                        </select>
+                    </div>
+                    <div class="col-md-12">
+                        <label class="form-label-custom">Interviewer Feedback & Notes</label>
+                        <textarea name="feedback" class="form-control" rows="3" 
+                                  placeholder="Candidate's technical depth, problem solving speed, communication, etc.">{{ interview.feedback or '' }}</textarea>
+                    </div>
+                </div>
+                {% endif %}
+
+                <div class="d-flex justify-content-end gap-2 pt-3 border-top">
+                    <a href="{{ url_for('applications.view', application_id=application.application_id) }}" class="btn btn-outline-custom">Cancel</a>
+                    <button type="submit" class="btn btn-primary-custom px-4">
+                        <i class="bi bi-calendar-check me-1"></i> {% if is_edit %}Save Changes{% else %}Schedule Round{% endif %}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
